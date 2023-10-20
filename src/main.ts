@@ -1,6 +1,13 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
+
+const DELAY_PROFIL_PAGE_VISIT_MS:number = 5000;
+
+function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 ( async () => {
 
     puppeteer.use(StealthPlugin());
@@ -32,11 +39,34 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
         const href = await page.evaluate(el => el.getAttribute('href'), element);
         hrefs=[...hrefs, `https://www.youtube.com${href}/about`]
     }
+    hrefs = [...new Set(hrefs)];
 
 
-    for ( let href in hrefs ) {
-        // document.querySelector('yt-formatted-string#description').innerHTML
-        // document.getElementsByClassName('yt-core-attributed-string__link') => after index 2 it's link commercial
+    for (let href of hrefs) {
+        console.log(href);
+        const aboutPageResponse = await page.goto(href);
+
+        await delay(DELAY_PROFIL_PAGE_VISIT_MS);
+
+        if ( aboutPageResponse && aboutPageResponse.status() === 200 ) { 
+            
+            await page.waitForSelector('yt-formatted-string#description', {visible: true, timeout:5000});
+
+            const description = await page.evaluate(() => document.querySelector('yt-formatted-string#description')?.innerHTML);
+
+            if ( description ) {
+                console.log(description)
+            } else {
+                console.log("No description found")
+            }
+        }
     }
+
+    
+    // for ( let href in hrefs ) {
+    //     console.log(href);
+    //     // document.querySelector('yt-formatted-string#description').innerHTML
+    //     // document.getElementsByClassName('yt-core-attributed-string__link') => after index 2 it's link commercial
+    // }
 
 })()
