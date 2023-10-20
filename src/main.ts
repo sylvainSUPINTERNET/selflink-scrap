@@ -55,23 +55,28 @@ function delay(ms: number) {
 
         if ( aboutPageResponse && aboutPageResponse.status() === 200 ) { 
 
-            
-            // TODO implements count sub
-            // const subs = '1 M abonnés';
+            try {
+                // getting subscribers count
+                await page.waitForSelector('#subscriber-count', {visible: true, timeout:5000});
 
-            // let factor = {
-            // "k": 10e2,
-            // "m": 10e5,
-            // "b": 10e9
-            // };
+                const factor:any = {
+                    "k": 10e2,
+                    "m": 10e5,
+                    "b": 10e9
+                };
+                let countRaw = await page.evaluate(() => (document.querySelector('#subscriber-count') as any).text.simpleText);
 
-            // console.log(761*10e5)
+                if ( countRaw ) {
+                    let x = countRaw.split(" ")
+                    let f = factor[[...x[0]].pop().toLowerCase()]
+                    let sb = parseFloat(x[0].slice(0, -1)) * f
+                    console.log("SUBS : ", sb)
+                }
 
-            // let x = subs.split(" ");
-            // let totalSub = parseFloat(x[0].replace(',','.')) * factor[x[1].toLowerCase()]
-            // console.log(totalSub)
-
-            
+            } catch ( e ) {
+                console.log(e)
+            }
+ 
             // get links from about page > links
             try {
                 console.log("> FROM LINKS BLOCK")
