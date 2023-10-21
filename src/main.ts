@@ -19,7 +19,7 @@ const qualityProspect = (reports: IReport[]) => {
     return quality;
 }
 
-const writeReport = (qualifiedReport: IReport[], search:string) => {
+const writeReport = async (qualifiedReport: IReport[], search:string) => {
     console.log("writing report ...")
     const workbook = new Workbook();
     const worksheet = workbook.addWorksheet(search);
@@ -31,7 +31,7 @@ const writeReport = (qualifiedReport: IReport[], search:string) => {
     });
 
     const filePath = path.join(__dirname, 'prospect.xlsx');
-    workbook.xlsx.writeFile(`./prospect.xlsx`);
+    await workbook.xlsx.writeFile(filePath);
     console.log("writing report done")
 }
 
