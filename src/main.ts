@@ -1,9 +1,9 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Workbook } from 'exceljs';
+import path from "path"
 
-
-const MAX_PROSPECTS_PER_SEARCH:number = 40;
+let MAX_PROSPECTS_PER_SEARCH:number = 40;
 
 const DELAY_PROFIL_PAGE_VISIT_MS:number = 5000;
 
@@ -14,14 +14,25 @@ function delay(ms: number) {
 }
 
 const qualityProspect = (reports: IReport[]) => {
-        const quality = reports.filter(report => report.subscribers >= 1000 && report.emails.length > 0);
-    
-        return quality;
+    console.log("cleaning reports")
+    const quality = reports.filter(report => report.subscribers >= 1000);
+    return quality;
 }
 
 const writeReport = (qualifiedReport: IReport[], search:string) => {
+    console.log("writing report ...")
     const workbook = new Workbook();
-    // const worksheet = workbook.addWorksheet("Qualif Prospects for " + );
+    const worksheet = workbook.addWorksheet(search);
+
+    worksheet.addRow(["emails", "subscribers", "links","send","answer","note"]);
+
+    qualifiedReport.forEach(report => {
+        worksheet.addRow([report.emails.join(","), report.subscribers, report.links.join(","), false, false, ""])
+    });
+
+    const filePath = path.join(__dirname, 'prospect.xlsx');
+    workbook.xlsx.writeFile(`./prospect.xlsx`);
+    console.log("writing report done")
 }
 
 
@@ -35,9 +46,11 @@ interface IReport {
 
     let search:string = "";
 
-    console.log(process.argv)
-
     console.log("Searching influenceur for : ", process.argv[2])
+    
+    MAX_PROSPECTS_PER_SEARCH = parseInt(process.argv[3]) || MAX_PROSPECTS_PER_SEARCH;
+
+    console.log("Max prospects per search : ", MAX_PROSPECTS_PER_SEARCH)
     search = process.argv[2];
 
     let reports: IReport[] = [];
@@ -113,6 +126,8 @@ interface IReport {
                     let sb = parseFloat(x[0].slice(0, -1)) * f
                     console.log("SUBS : ", sb)
                     report["subscribers"] = sb;
+                } else {
+                    report["subscribers"] = 0;
                 }
 
             } catch ( e ) {
@@ -133,6 +148,8 @@ interface IReport {
                     const extractedLinks = links.map(link => link.split('\n')[1]);
                     console.log(extractedLinks);
                     report["links"] = extractedLinks;
+                } else {
+                    report["links"] = [];
                 }
 
 
@@ -157,12 +174,15 @@ interface IReport {
 
                     if ( emails ) {
                         console.log(emails)
+                        report["emails"] = emails
+                    } else {
+                        report["emails"] = []
                     }
                     
-                    report["emails"] = emails
 
                 } else {
                     console.log("> No description found")
+                    report["emails"] = []
                 }
 
             } catch ( e ) {
@@ -183,5 +203,7 @@ interface IReport {
     } else {
         console.log("No prospects found")
     }
+
+    process.exit(0)
     
 })()
