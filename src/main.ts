@@ -1,5 +1,9 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import { Workbook } from 'exceljs';
+
+
+const MAX_PROSPECTS_PER_SEARCH:number = 40;
 
 const DELAY_PROFIL_PAGE_VISIT_MS:number = 5000;
 
@@ -9,7 +13,34 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const qualityProspect = (reports: IReport[]) => {
+        const quality = reports.filter(report => report.subscribers >= 1000 && report.emails.length > 0);
+    
+        return quality;
+}
+
+const writeReport = (qualifiedReport: IReport[], search:string) => {
+    const workbook = new Workbook();
+    // const worksheet = workbook.addWorksheet("Qualif Prospects for " + );
+}
+
+
+interface IReport {
+    emails: string[],
+    subscribers: number,
+    links: string[]
+}
+
 ( async () => {
+
+    let search:string = "";
+
+    console.log(process.argv)
+
+    console.log("Searching influenceur for : ", process.argv[2])
+    search = process.argv[2];
+
+    let reports: IReport[] = [];
     
     puppeteer.use(StealthPlugin());
 
@@ -24,7 +55,7 @@ function delay(ms: number) {
     await page.waitForSelector("input#search", {visible: true, timeout:5000});
 
     await page.focus("input#search");
-    await page.type("input#search", "haul france");
+    await page.type("input#search", `${search}`);
 
     await page.evaluate(() => {
         const form: HTMLFormElement | null = document.querySelector('form#search-form');
@@ -42,18 +73,28 @@ function delay(ms: number) {
     }
     hrefs = [...new Set(hrefs)];
 
-    
 
-
-
-
+    let c:number = 0;
     for (let href of hrefs) {
-        console.log(href);
+
+        if ( c >= MAX_PROSPECTS_PER_SEARCH ) {
+            break;
+        }
+        
+        let report:IReport = {
+            emails: [],
+            subscribers: 0,
+            links: []
+        }
+
+        console.log("Go to : ", href)
         const aboutPageResponse = await page.goto(href);
 
         await delay(DELAY_PROFIL_PAGE_VISIT_MS);
 
         if ( aboutPageResponse && aboutPageResponse.status() === 200 ) { 
+
+            ++c;
 
             try {
                 // getting subscribers count
@@ -71,11 +112,12 @@ function delay(ms: number) {
                     let f = factor[[...x[0]].pop().toLowerCase()]
                     let sb = parseFloat(x[0].slice(0, -1)) * f
                     console.log("SUBS : ", sb)
+                    report["subscribers"] = sb;
                 }
 
             } catch ( e ) {
                 console.log(e)
-            }
+            } 
  
             // get links from about page > links
             try {
@@ -90,6 +132,7 @@ function delay(ms: number) {
                 if ( links ) {
                     const extractedLinks = links.map(link => link.split('\n')[1]);
                     console.log(extractedLinks);
+                    report["links"] = extractedLinks;
                 }
 
 
@@ -115,6 +158,8 @@ function delay(ms: number) {
                     if ( emails ) {
                         console.log(emails)
                     }
+                    
+                    report["emails"] = emails
 
                 } else {
                     console.log("> No description found")
@@ -126,10 +171,17 @@ function delay(ms: number) {
 
         }
 
+        reports = [...reports, report];
         console.log("===============================================")
+
     }
 
-
-    // document.querySelectorAll('.yt-channel-external-link-view-model-wiz')
-
+    console.log(reports)
+    let qualifiedReport = qualityProspect(reports)
+    if ( qualifiedReport.length > 0 ) {
+        writeReport(qualifiedReport, search)
+    } else {
+        console.log("No prospects found")
+    }
+    
 })()
