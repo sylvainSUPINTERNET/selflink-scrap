@@ -1,7 +1,15 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Workbook } from 'exceljs';
-import path from "path"
+import path from "path";
+
+
+interface IReport {
+    emails: string[],
+    subscribers: number,
+    ytb_id: string,
+    links: string[]
+}
 
 let MAX_PROSPECTS_PER_SEARCH:number = 40;
 
@@ -15,32 +23,36 @@ function delay(ms: number) {
 
 const qualityProspect = (reports: IReport[]) => {
     console.log("cleaning reports")
-    const quality = reports.filter(report => report.subscribers >= 1000);
+    const quality = reports.filter(report => report.subscribers >= 1000 && report.subscribers <= 100000);
     return quality;
 }
 
+
 const writeReport = async (qualifiedReport: IReport[], search:string) => {
-    console.log("writing report ...")
-    const workbook = new Workbook();
-    const worksheet = workbook.addWorksheet(search);
 
-    worksheet.addRow(["emails", "subscribers", "links","send","answer","note"]);
+    try {
+        console.log("writing report ...")
+        const workbook = new Workbook();
+        const worksheet = workbook.addWorksheet(search);
+    
+        worksheet.addRow(["emails", "subscribers", "links","send","answer","note", "ytb_id"]);
+    
+        qualifiedReport.forEach(report => {
+            worksheet.addRow([report.emails.join(","), report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
+        });
+    
+        const filePath = path.join(__dirname, 'prospect.xlsx');
+        console.log(filePath)
+        await workbook.xlsx.writeFile(filePath);
+    
+        console.log("writing report done")
+    } catch ( e ) {
+        console.log("Write quality report error : " , e);
+    }
 
-    qualifiedReport.forEach(report => {
-        worksheet.addRow([report.emails.join(","), report.subscribers, report.links.join(","), false, false, ""])
-    });
-
-    const filePath = path.join(__dirname, 'prospect.xlsx');
-    await workbook.xlsx.writeFile(filePath);
-    console.log("writing report done")
 }
 
 
-interface IReport {
-    emails: string[],
-    subscribers: number,
-    links: string[]
-}
 
 ( async () => {
 
@@ -97,7 +109,8 @@ interface IReport {
         let report:IReport = {
             emails: [],
             subscribers: 0,
-            links: []
+            links: [],
+            ytb_id: href
         }
 
         console.log("Go to : ", href)
@@ -199,7 +212,7 @@ interface IReport {
     console.log(reports)
     let qualifiedReport = qualityProspect(reports)
     if ( qualifiedReport.length > 0 ) {
-        writeReport(qualifiedReport, search)
+        await writeReport(qualifiedReport, search)
     } else {
         console.log("No prospects found")
     }
