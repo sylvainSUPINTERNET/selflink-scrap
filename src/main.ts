@@ -1,8 +1,8 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { Workbook } from 'exceljs';
+import { Workbook, Worksheet } from 'exceljs';
 import path from "path";
-
+import fs from 'fs';
 
 interface IReport {
     emails: string[],
@@ -27,31 +27,131 @@ const qualityProspect = (reports: IReport[]) => {
     return quality;
 }
 
-
-const writeReport = async (qualifiedReport: IReport[], search:string) => {
-
+const writeReport = async ( qualifiedReport: IReport[], search:string ) => {
+    console.log("WRITE REPORT", qualifiedReport);
     try {
-        console.log("writing report ...")
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet(search);
-    
-        worksheet.addRow(["emails", "subscribers", "links","send","answer","note", "ytb_id"]);
-    
-        qualifiedReport.forEach(report => {
-            worksheet.addRow([report.emails.join(","), report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
-        });
-    
+
+        let allEmailsExisting = new Set<string>();
+
         const filePath = path.join(__dirname, 'prospect.xlsx');
-        console.log(filePath)
-        await workbook.xlsx.writeFile(filePath);
-    
-        console.log("writing report done")
+
+        let workbook = new Workbook();
+        if ( fs.existsSync(filePath) ) {
+            console.log("file exists");
+            workbook = await workbook.xlsx.readFile(filePath);
+        }
+        
+        let worksheet: Worksheet | undefined = undefined;
+        if ( workbook.getWorksheet(search) === undefined ) {
+            worksheet = workbook.addWorksheet(search);
+            worksheet.addRow(["emails", "subscribers", "links","send","answer","note", "ytb_id"]);
+            console.log("worksheet created")
+        } else {
+            worksheet = workbook.getWorksheet(search);
+            console.log("get worksheet")
+        }
+
+
+        for ( let sheet of workbook.worksheets ) {
+            sheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+                if ( rowNumber > 1 ) {
+                    console.log("add email existing")                        
+                    allEmailsExisting.add((row as any).values[1] as string);
+                }
+            });
+        }
+
+
+        if (worksheet) {
+            console.log("worksheet OK")
+            qualifiedReport.forEach(report => {
+                if ( report.emails ) {
+                    console.log("found emails ...")
+                    report.emails.forEach(email => {
+                        console.log("check email : ", email)
+                        if ( !allEmailsExisting.has(email) ) {
+                            console.log("write : ", email);
+                            worksheet?.addRow([email, report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
+                        }
+                    });
+                }
+            });
+            console.log("Write worksheet OK")
+
+            await workbook.xlsx.writeFile(filePath);
+        }
+
     } catch ( e ) {
-        console.log("Write quality report error : " , e);
+        console.log("Error : ", e)
     }
 
 }
 
+
+// const writeReport = async (qualifiedReport: IReport[], search:string) => {
+
+//     try {
+//         const filePath = path.join(__dirname, 'prospect.xlsx');
+//         const workbook = new Workbook();
+
+//         if ( fs.existsSync(filePath) ) {
+                    
+//             await workbook.xlsx.readFile(filePath);
+
+//             let emailsAlreadyHere:Set<string>| undefined = undefined;
+
+//             let worksheet: Worksheet | undefined = undefined;
+
+//             if ( workbook.getWorksheet(search) === undefined ) {
+//                 worksheet = workbook.addWorksheet(search);
+//                 worksheet.addRow(["emails", "subscribers", "links","send","answer","note", "ytb_id"]);
+//             } else {
+//                 worksheet = workbook.getWorksheet(search);
+//             }
+
+//             for ( let sheet of workbook.worksheets ) {
+//                 sheet.eachRow({ includeEmpty: false }, function(row, rowNumber) {
+//                     if ( rowNumber > 1 ) {                        
+
+//                         if ( emailsAlreadyHere === undefined ) {
+//                             emailsAlreadyHere = new Set();
+//                         }
+//                         emailsAlreadyHere.add((row as any).values[1] as string);
+//                     }
+//                 });
+//             }
+
+//             if ( worksheet !== undefined ) {
+//                 qualifiedReport.forEach(report => {
+//                     if ( report.emails ) {
+//                         report.emails.forEach(email => {
+//                             if ( emailsAlreadyHere === undefined ) {
+//                                 (worksheet as Worksheet).addRow([email, report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
+//                             }
+//                             if ( emailsAlreadyHere !== undefined && !emailsAlreadyHere.has(email) ) {
+//                                 (worksheet as Worksheet).addRow([email, report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
+//                             }
+//                         });
+//                     }
+//                 });
+//             }
+
+
+//         } else {
+//             const worksheet = workbook.addWorksheet(search);
+//             worksheet.addRow(["emails", "subscribers", "links","send","answer","note", "ytb_id"]);
+//             qualifiedReport.forEach(report => {
+//                 worksheet.addRow([report.emails.join(","), report.subscribers, report.links.join(","), false, false, "", report.ytb_id])
+//             });
+//         }
+
+//         await workbook.xlsx.writeFile(filePath);
+
+//     } catch ( e ) {
+//         console.log("Error : ", e)
+//     }
+
+// }
 
 
 ( async () => {
@@ -212,6 +312,7 @@ const writeReport = async (qualifiedReport: IReport[], search:string) => {
     console.log(reports)
     let qualifiedReport = qualityProspect(reports)
     if ( qualifiedReport.length > 0 ) {
+        console.log("writing report");
         await writeReport(qualifiedReport, search)
     } else {
         console.log("No prospects found")
