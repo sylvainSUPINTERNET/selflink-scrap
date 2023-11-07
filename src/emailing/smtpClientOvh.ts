@@ -21,10 +21,10 @@ export interface IEmail {
     
 //     let t :IEmail[]= [{
 //         from: process.env.emailOvh as string, 
-//         to: "sylvain.joly00@gmail.com",       
+//         to: "lapotion.store@gmail.com",       
 //         envelope: {
 //             from: process.env.emailOvh as string, 
-//             to: "sylvain.joly00@gmail.com"        
+//             to: "lapotion.store@gmail.com"        
 //         },
 //         subject: 'Message',
 //         html: 'I hope this <b>message</b> gets sent!',
