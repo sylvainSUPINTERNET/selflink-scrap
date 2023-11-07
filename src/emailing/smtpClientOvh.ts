@@ -26,7 +26,7 @@ const startSmtpConn = ():nodemailer.Transporter | null => {
 }
 
 
-const poolSendEmail  = (messages:IEmail[]) => {
+export const poolSendEmail  = (messages:IEmail[]) => {
     const transporter = startSmtpConn();
 
     if ( transporter !== null ) {
@@ -43,6 +43,6 @@ const poolSendEmail  = (messages:IEmail[]) => {
             }
         });
 
-
+        transporter.close();
     }
 }
