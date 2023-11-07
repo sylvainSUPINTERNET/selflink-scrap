@@ -5,6 +5,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Workbook, Worksheet } from 'exceljs';
 import path from "path";
 import fs from 'fs';
+import { IEmail, poolSendEmail } from './emailing/smtpClientOvh';
 
 interface IReport {
     emails: string[],
@@ -156,6 +157,7 @@ const writeReport = async ( qualifiedReport: IReport[], search:string ) => {
 // }
 
 
+
 ( async () => {
 
     let search:string = "";
@@ -220,7 +222,7 @@ const writeReport = async ( qualifiedReport: IReport[], search:string ) => {
 
         await delay(DELAY_PROFIL_PAGE_VISIT_MS);
 
-        if ( aboutPageResponse && aboutPageResponse.status() === 200 ) { 
+        if ( aboutPageResponse && aboutPageResponse!.status() === 200 ) { 
 
             ++c;
 

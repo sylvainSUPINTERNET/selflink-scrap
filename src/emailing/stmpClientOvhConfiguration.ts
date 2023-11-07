@@ -1,4 +1,4 @@
-const configuration = {
+export const configuration = {
     smtp: {
         ovh: {
             pool: true,
@@ -7,7 +7,7 @@ const configuration = {
             secure: false, // `false` pour STARTTLS, `true` si vous utilisez le port 465 avec SSL
             auth: {
                 user: process.env.emailOvh,
-                pass: process.env.passwordOvh
+                pass: process.env.emailPasswordOvh
             },
             tls: {
                 rejectUnauthorized: true,
