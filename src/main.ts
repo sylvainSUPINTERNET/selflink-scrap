@@ -1,3 +1,5 @@
+import 'dotenv/config'
+
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Workbook, Worksheet } from 'exceljs';
