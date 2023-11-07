@@ -26,10 +26,22 @@ const startSmtpConn = ():nodemailer.Transporter | null => {
 }
 
 
-const sendEmail  = () => {
-    const stmpConn = startSmtpConn();
+const poolSendEmail  = (messages:IEmail[]) => {
+    const transporter = startSmtpConn();
 
-    if ( stmpConn !== null ) {
+    if ( transporter !== null ) {
+        
+        (transporter as nodemailer.Transporter).on('idle', () => {
+            while(transporter.isIdle() && messages.length > 0 ) {
+                transporter.sendMail(messages.shift() as IEmail, ( error, infos) => {
+                    if ( error ) {
+                        console.log("Failed to send email", error);
+                    } else {
+                        console.log("Email sent", infos);
+                    }
+                });
+            }
+        });
 
 
     }
