@@ -5,7 +5,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { Workbook, Worksheet } from 'exceljs';
 import path from "path";
 import fs from 'fs';
-import { IEmail, poolSendEmail } from './emailing/smtpClientOvh';
+import { sendEmail } from './emailing/smtpClientOvh';
 
 interface IReport {
     emails: string[],
@@ -158,170 +158,175 @@ const writeReport = async ( qualifiedReport: IReport[], search:string ) => {
 
 
 
-( async () => {
+( async ( ) => {
+    sendEmail("sylvain.joly00@gmail.com");
+})();
 
-    let search:string = "";
+// TODO add sendEmail into parsing process
+// ( async () => {
 
-    console.log("Searching influenceur for : ", process.argv[2])
+//     let search:string = "";
+
+//     console.log("Searching influenceur for : ", process.argv[2])
     
-    MAX_PROSPECTS_PER_SEARCH = parseInt(process.argv[3]) || MAX_PROSPECTS_PER_SEARCH;
+//     MAX_PROSPECTS_PER_SEARCH = parseInt(process.argv[3]) || MAX_PROSPECTS_PER_SEARCH;
 
-    console.log("Max prospects per search : ", MAX_PROSPECTS_PER_SEARCH)
-    search = process.argv[2];
+//     console.log("Max prospects per search : ", MAX_PROSPECTS_PER_SEARCH)
+//     search = process.argv[2];
 
-    let reports: IReport[] = [];
+//     let reports: IReport[] = [];
     
-    puppeteer.use(StealthPlugin());
+//     puppeteer.use(StealthPlugin());
 
-    const chromeExecPath = `C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe`;
+//     const chromeExecPath = `C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe`;
 
-    const browser = await puppeteer.launch({executablePath: chromeExecPath, headless: false}); // headless: "new"
+//     const browser = await puppeteer.launch({executablePath: chromeExecPath, headless: false}); // headless: "new"
         
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html');
-    await page.goto('https://www.youtube.com');
+//     const page = await browser.newPage();
+//     await page.setUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html');
+//     await page.goto('https://www.youtube.com');
 
-    await page.waitForSelector("input#search", {visible: true, timeout:5000});
+//     await page.waitForSelector("input#search", {visible: true, timeout:5000});
 
-    await page.focus("input#search");
-    await page.type("input#search", `${search}`);
+//     await page.focus("input#search");
+//     await page.type("input#search", `${search}`);
 
-    await page.evaluate(() => {
-        const form: HTMLFormElement | null = document.querySelector('form#search-form');
-        if (form) form.submit();
-    });
+//     await page.evaluate(() => {
+//         const form: HTMLFormElement | null = document.querySelector('form#search-form');
+//         if (form) form.submit();
+//     });
 
-    await new Promise(resolve => setTimeout(resolve, 8000));
+//     await new Promise(resolve => setTimeout(resolve, 8000));
 
-    const elements = await page.$$('.yt-simple-endpoint.style-scope.yt-formatted-string');
-    let hrefs: string[] = [];
+//     const elements = await page.$$('.yt-simple-endpoint.style-scope.yt-formatted-string');
+//     let hrefs: string[] = [];
     
-    for (let element of elements) {
-        const href = await page.evaluate(el => el.getAttribute('href'), element);
-        hrefs=[...hrefs, `https://www.youtube.com${href}/about`]
-    }
-    hrefs = [...new Set(hrefs)];
+//     for (let element of elements) {
+//         const href = await page.evaluate(el => el.getAttribute('href'), element);
+//         hrefs=[...hrefs, `https://www.youtube.com${href}/about`]
+//     }
+//     hrefs = [...new Set(hrefs)];
 
 
-    let c:number = 0;
-    for (let href of hrefs) {
+//     let c:number = 0;
+//     for (let href of hrefs) {
 
-        if ( c >= MAX_PROSPECTS_PER_SEARCH ) {
-            break;
-        }
+//         if ( c >= MAX_PROSPECTS_PER_SEARCH ) {
+//             break;
+//         }
         
-        let report:IReport = {
-            emails: [],
-            subscribers: 0,
-            links: [],
-            ytb_id: href
-        }
+//         let report:IReport = {
+//             emails: [],
+//             subscribers: 0,
+//             links: [],
+//             ytb_id: href
+//         }
 
-        console.log("Go to : ", href)
-        const aboutPageResponse = await page.goto(href);
+//         console.log("Go to : ", href)
+//         const aboutPageResponse = await page.goto(href);
 
-        await delay(DELAY_PROFIL_PAGE_VISIT_MS);
+//         await delay(DELAY_PROFIL_PAGE_VISIT_MS);
 
-        if ( aboutPageResponse && aboutPageResponse!.status() === 200 ) { 
+//         if ( aboutPageResponse && aboutPageResponse!.status() === 200 ) { 
 
-            ++c;
+//             ++c;
 
-            try {
-                // getting subscribers count
-                await page.waitForSelector('#subscriber-count', {visible: true, timeout:5000});
+//             try {
+//                 // getting subscribers count
+//                 await page.waitForSelector('#subscriber-count', {visible: true, timeout:5000});
 
-                const factor:any = {
-                    "k": 10e2,
-                    "m": 10e5,
-                    "b": 10e9
-                };
-                let countRaw = await page.evaluate(() => (document.querySelector('#subscriber-count') as any).text.simpleText);
+//                 const factor:any = {
+//                     "k": 10e2,
+//                     "m": 10e5,
+//                     "b": 10e9
+//                 };
+//                 let countRaw = await page.evaluate(() => (document.querySelector('#subscriber-count') as any).text.simpleText);
 
-                if ( countRaw ) {
-                    let x = countRaw.split(" ")
-                    let f = factor[[...x[0]].pop().toLowerCase()]
-                    let sb = parseFloat(x[0].slice(0, -1)) * f
-                    console.log("SUBS : ", sb)
-                    report["subscribers"] = sb;
-                } else {
-                    report["subscribers"] = 0;
-                }
+//                 if ( countRaw ) {
+//                     let x = countRaw.split(" ")
+//                     let f = factor[[...x[0]].pop().toLowerCase()]
+//                     let sb = parseFloat(x[0].slice(0, -1)) * f
+//                     console.log("SUBS : ", sb)
+//                     report["subscribers"] = sb;
+//                 } else {
+//                     report["subscribers"] = 0;
+//                 }
 
-            } catch ( e ) {
-                console.log(e)
-            } 
+//             } catch ( e ) {
+//                 console.log(e)
+//             } 
  
-            // get links from about page > links
-            try {
-                console.log("> FROM LINKS BLOCK")
+//             // get links from about page > links
+//             try {
+//                 console.log("> FROM LINKS BLOCK")
 
-                await page.waitForSelector('div#links-container', {visible: true, timeout:5000});
+//                 await page.waitForSelector('div#links-container', {visible: true, timeout:5000});
 
-                const links = await page.evaluate(() => 
-                        Array.from(document.querySelectorAll('.yt-channel-external-link-view-model-wiz')).map((link:any) => link.innerText)
-                    );
+//                 const links = await page.evaluate(() => 
+//                         Array.from(document.querySelectorAll('.yt-channel-external-link-view-model-wiz')).map((link:any) => link.innerText)
+//                     );
 
-                if ( links ) {
-                    const extractedLinks = links.map(link => link.split('\n')[1]);
-                    console.log(extractedLinks);
-                    report["links"] = extractedLinks;
-                } else {
-                    report["links"] = [];
-                }
+//                 if ( links ) {
+//                     const extractedLinks = links.map(link => link.split('\n')[1]);
+//                     console.log(extractedLinks);
+//                     report["links"] = extractedLinks;
+//                 } else {
+//                     report["links"] = [];
+//                 }
 
 
-            } catch ( e ) {
-                console.log(e);
-            }
+//             } catch ( e ) {
+//                 console.log(e);
+//             }
 
-            console.log("--------------------------|         |-----------------------------")
+//             console.log("--------------------------|         |-----------------------------")
 
-            try {
-                await page.waitForSelector('yt-formatted-string#description', {visible: true, timeout:5000});
+//             try {
+//                 await page.waitForSelector('yt-formatted-string#description', {visible: true, timeout:5000});
                 
-                // get emails from about page > description ( email )
-                const description = await page.evaluate(() => (document.querySelector('yt-formatted-string#description') as any)?.text.simpleText);
+//                 // get emails from about page > description ( email )
+//                 const description = await page.evaluate(() => (document.querySelector('yt-formatted-string#description') as any)?.text.simpleText);
 
-                console.log("> FROM DESCRIPTINO : ")
-                if ( description ) {
+//                 console.log("> FROM DESCRIPTINO : ")
+//                 if ( description ) {
 
-                    console.log(description)
+//                     console.log(description)
     
-                    const emails = description.match(emailRegex);
+//                     const emails = description.match(emailRegex);
 
-                    if ( emails ) {
-                        console.log(emails)
-                        report["emails"] = emails
-                    } else {
-                        report["emails"] = []
-                    }
+//                     if ( emails ) {
+//                         console.log(emails)
+//                         report["emails"] = emails
+//                     } else {
+//                         report["emails"] = []
+//                     }
                     
 
-                } else {
-                    console.log("> No description found")
-                    report["emails"] = []
-                }
+//                 } else {
+//                     console.log("> No description found")
+//                     report["emails"] = []
+//                 }
 
-            } catch ( e ) {
-                console.log(e);
-            }
+//             } catch ( e ) {
+//                 console.log(e);
+//             }
 
-        }
+//         }
 
-        reports = [...reports, report];
-        console.log("===============================================")
+//         reports = [...reports, report];
+//         console.log("===============================================")
 
-    }
+//     }
 
-    console.log(reports)
-    let qualifiedReport = qualityProspect(reports)
-    if ( qualifiedReport.length > 0 ) {
-        console.log("writing report");
-        await writeReport(qualifiedReport, search)
-    } else {
-        console.log("No prospects found")
-    }
+//     console.log(reports)
+//     let qualifiedReport = qualityProspect(reports)
+//     if ( qualifiedReport.length > 0 ) {
+//         console.log("writing report");
+//         await writeReport(qualifiedReport, search)
+//     } else {
+//         console.log("No prospects found")
+//     }
 
-    process.exit(0)
+//     process.exit(0)
     
-})()
+// })()
