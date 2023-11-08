@@ -134,7 +134,6 @@ export const sendEmail = (to:string) => {
 
             <div class="email-container">
                 <div class="email-content">
-                    <img src="cid:unique@image.cid" alt="Image" class="email-image">
                     <h1>Hello, there!</h1>
                     <p>This is a sample email template with an image and a button.</p>
                     <a href="https://www.example.com" class="email-button">Click Me!</a>
